@@ -361,29 +361,78 @@ export default function ConnectorsPage() {
                 </div>
               )}
 
-              {["360dialog", "wati", "interakt"].includes(newType) && (
+              {newType === "360dialog" && (
                 <div className="space-y-3">
-                  <label className="block text-sm font-medium">
-                    Base URL <span className="text-red-500">*</span>
-                    <input value={newConfig.base_url ?? ""} onChange={(e) => updateCfg("base_url", e.target.value)}
-                      placeholder="https://..."
-                      className="mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-purple-500" />
-                  </label>
                   <label className="block text-sm font-medium">
                     API Key <span className="text-red-500">*</span>
                     <input type="password" value={newConfig.api_key ?? ""} onChange={(e) => updateCfg("api_key", e.target.value)}
+                      placeholder="Your 360dialog API key"
+                      className="mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-purple-500" />
+                  </label>
+                  <label className="block text-sm font-medium">
+                    Base URL
+                    <input value={newConfig.base_url ?? ""} onChange={(e) => updateCfg("base_url", e.target.value)}
+                      placeholder="https://waba.360dialog.io (default)"
+                      className="mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-purple-500" />
+                    <p className="text-[10px] text-muted-foreground mt-1">Leave blank for default: https://waba.360dialog.io</p>
+                  </label>
+                </div>
+              )}
+
+              {newType === "wati" && (
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium">
+                    API Endpoint <span className="text-red-500">*</span>
+                    <input value={newConfig.base_url ?? ""} onChange={(e) => updateCfg("base_url", e.target.value)}
+                      placeholder="https://live-mt-server.wati.io/xxxxx"
+                      className="mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-purple-500" />
+                    <p className="text-[10px] text-muted-foreground mt-1">Find in Wati Dashboard → API Settings</p>
+                  </label>
+                  <label className="block text-sm font-medium">
+                    API Token <span className="text-red-500">*</span>
+                    <input type="password" value={newConfig.api_key ?? ""} onChange={(e) => updateCfg("api_key", e.target.value)}
+                      placeholder="Bearer token from Wati"
                       className="mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-purple-500" />
                   </label>
                 </div>
               )}
 
+              {newType === "interakt" && (
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium">
+                    API Key <span className="text-red-500">*</span>
+                    <input type="password" value={newConfig.api_key ?? ""} onChange={(e) => updateCfg("api_key", e.target.value)}
+                      placeholder="Your Interakt API key"
+                      className="mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-purple-500" />
+                    <p className="text-[10px] text-muted-foreground mt-1">Find in Interakt Dashboard → Developer Settings</p>
+                  </label>
+                  <label className="block text-sm font-medium">
+                    Base URL
+                    <input value={newConfig.base_url ?? ""} onChange={(e) => updateCfg("base_url", e.target.value)}
+                      placeholder="https://api.interakt.ai (default)"
+                      className="mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-purple-500" />
+                    <p className="text-[10px] text-muted-foreground mt-1">Leave blank for default: https://api.interakt.ai</p>
+                  </label>
+                </div>
+              )}
+
               {newType === "crm_webhook" && (
-                <label className="block text-sm font-medium">
-                  Webhook URL
-                  <input value={newConfig.base_url ?? ""} onChange={(e) => updateCfg("base_url", e.target.value)}
-                    placeholder="https://hooks.your-crm.com/..."
-                    className="mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-purple-500" />
-                </label>
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium">
+                    Webhook URL <span className="text-red-500">*</span>
+                    <input value={newConfig.webhook_url ?? ""} onChange={(e) => updateCfg("webhook_url", e.target.value)}
+                      placeholder="https://hooks.your-crm.com/whatsapp"
+                      className="mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-purple-500" />
+                    <p className="text-[10px] text-muted-foreground mt-1">We POST message data as JSON to this URL</p>
+                  </label>
+                  <label className="block text-sm font-medium">
+                    Authorization Header (optional)
+                    <input type="password" value={newConfig.auth_header ?? ""} onChange={(e) => updateCfg("auth_header", e.target.value)}
+                      placeholder="Bearer your-secret-token"
+                      className="mt-1 h-10 w-full rounded-lg border px-3 text-sm outline-none focus:border-purple-500" />
+                    <p className="text-[10px] text-muted-foreground mt-1">Sent as Authorization header if provided</p>
+                  </label>
+                </div>
               )}
             </div>
 

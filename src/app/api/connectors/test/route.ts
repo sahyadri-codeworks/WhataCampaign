@@ -12,34 +12,90 @@ export async function POST(req: Request) {
   }
 
   try {
-    let result;
+    let result: { ok: boolean; phone_number?: string; display_name?: string; error?: string };
 
-    if (body.type === "meta_cloud_api") {
-      if (!body.config.phone_number_id || !body.config.access_token) {
-        return Response.json({ error: "phone_number_id and access_token are required" }, { status: 400 });
+    switch (body.type) {
+      case "meta_cloud_api": {
+        if (!body.config.phone_number_id || !body.config.access_token) {
+          return Response.json({ error: "phone_number_id and access_token are required" }, { status: 400 });
+        }
+        const adapter = new MetaCloudApiAdapter({
+          phone_number_id: body.config.phone_number_id,
+          access_token: body.config.access_token,
+          api_version: body.config.api_version,
+        });
+        result = await adapter.testConnection();
+        break;
       }
 
-      const adapter = new MetaCloudApiAdapter({
-        phone_number_id: body.config.phone_number_id,
-        access_token: body.config.access_token,
-        api_version: body.config.api_version,
-      });
-
-      result = await adapter.testConnection();
-    } else if (["360dialog", "wati", "interakt"].includes(body.type)) {
-      if (!body.config.base_url || !body.config.api_key) {
-        return Response.json({ error: "base_url and api_key are required" }, { status: 400 });
+      case "360dialog": {
+        if (!body.config.api_key) {
+          return Response.json({ error: "api_key is required for 360dialog" }, { status: 400 });
+        }
+        const adapter = new BspAdapter({
+          base_url: body.config.base_url || "https://waba.360dialog.io",
+          api_key: body.config.api_key,
+          provider: "360dialog",
+        });
+        result = await adapter.testConnection();
+        break;
       }
 
-      const adapter = new BspAdapter({
-        base_url: body.config.base_url,
-        api_key: body.config.api_key,
-        provider: body.type as "360dialog" | "wati" | "interakt",
-      });
+      case "wati": {
+        if (!body.config.api_key || !body.config.base_url) {
+          return Response.json({ error: "base_url and api_key are required for Wati" }, { status: 400 });
+        }
+        const adapter = new BspAdapter({
+          base_url: body.config.base_url,
+          api_key: body.config.api_key,
+          provider: "wati",
+        });
+        result = await adapter.testConnection();
+        break;
+      }
 
-      result = await adapter.testConnection();
-    } else {
-      return Response.json({ error: `Unknown connector type: ${body.type}` }, { status: 400 });
+      case "interakt": {
+        if (!body.config.api_key) {
+          return Response.json({ error: "api_key is required for Interakt" }, { status: 400 });
+        }
+        const adapter = new BspAdapter({
+          base_url: body.config.base_url || "https://api.interakt.ai",
+          api_key: body.config.api_key,
+          provider: "interakt",
+        });
+        result = await adapter.testConnection();
+        break;
+      }
+
+      case "crm_webhook": {
+        const webhookUrl = body.config.webhook_url || body.config.base_url;
+        if (!webhookUrl) {
+          return Response.json({ error: "webhook_url is required" }, { status: 400 });
+        }
+        try {
+          const headers: Record<string, string> = { "Content-Type": "application/json" };
+          if (body.config.auth_header) headers["Authorization"] = body.config.auth_header;
+
+          const res = await fetch(webhookUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({ type: "connection_test", source: "whatacampaign", timestamp: new Date().toISOString() }),
+            signal: AbortSignal.timeout(10000),
+          });
+          const ok = res.status >= 200 && res.status < 400;
+          result = {
+            ok,
+            display_name: ok ? `Webhook OK (${res.status})` : undefined,
+            error: ok ? undefined : `HTTP ${res.status} ${res.statusText}`,
+          };
+        } catch (err) {
+          result = { ok: false, error: err instanceof Error ? err.message : "Webhook unreachable" };
+        }
+        break;
+      }
+
+      default:
+        return Response.json({ error: `Unknown connector type: ${body.type}` }, { status: 400 });
     }
 
     return Response.json(result);
