@@ -28,7 +28,7 @@ DROP FUNCTION IF EXISTS update_updated_at() CASCADE;
 -- ============================================================
 CREATE TABLE contacts (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id         UUID NOT NULL,
+  user_id         TEXT NOT NULL DEFAULT 'anon-fallback',
   phone           TEXT NOT NULL,
   name            TEXT,
   optin_category  TEXT NOT NULL DEFAULT 'none'
@@ -68,7 +68,7 @@ CREATE INDEX idx_custom_fields_contact ON contact_custom_fields(contact_id);
 -- ============================================================
 CREATE TABLE campaigns (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id         UUID NOT NULL,
+  user_id         TEXT NOT NULL DEFAULT 'anon-fallback',
   name            TEXT NOT NULL,
   category        TEXT NOT NULL DEFAULT 'Marketing'
     CHECK (category IN ('Marketing','Utility','Authentication')),
@@ -98,8 +98,9 @@ CREATE INDEX idx_campaigns_status ON campaigns(status);
 -- ============================================================
 CREATE TABLE message_log (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  campaign_id    UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
-  contact_id     UUID NOT NULL REFERENCES contacts(id) ON DELETE CASCADE,
+  user_id        TEXT NOT NULL DEFAULT 'anon-fallback',
+  campaign_id    UUID REFERENCES campaigns(id) ON DELETE CASCADE,
+  contact_id     UUID REFERENCES contacts(id) ON DELETE CASCADE,
   contact_phone  TEXT NOT NULL,
   status         TEXT NOT NULL DEFAULT 'queued'
     CHECK (status IN ('queued','sent','delivered','read','failed','responded')),
@@ -117,17 +118,18 @@ CREATE INDEX idx_msglog_contact ON message_log(contact_id);
 CREATE INDEX idx_msglog_status ON message_log(status);
 CREATE INDEX idx_msglog_error ON message_log(error_code) WHERE error_code IS NOT NULL;
 CREATE INDEX idx_msglog_sent ON message_log(sent_at);
+CREATE INDEX idx_msglog_user ON message_log(user_id);
 
 -- ============================================================
 -- 5. JOURNEYS
 -- ============================================================
 CREATE TABLE journeys (
   id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id    UUID NOT NULL,
+  user_id    TEXT NOT NULL DEFAULT 'anon-fallback',
   name       TEXT NOT NULL,
   status     TEXT NOT NULL DEFAULT 'draft'
     CHECK (status IN ('draft','active','paused','completed')),
-  graph_data JSONB NOT NULL DEFAULT '{"nodes":[],"edges":[]}',
+  definition JSONB NOT NULL DEFAULT '{"nodes":[],"edges":[]}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
@@ -139,9 +141,9 @@ CREATE INDEX idx_journeys_user ON journeys(user_id);
 -- ============================================================
 CREATE TABLE segments (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id       UUID NOT NULL,
+  user_id       TEXT NOT NULL DEFAULT 'anon-fallback',
   name          TEXT NOT NULL,
-  filter_query  TEXT NOT NULL,
+  filter_query  TEXT NOT NULL DEFAULT '',
   contact_count INT NOT NULL DEFAULT 0,
   created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at    TIMESTAMPTZ NOT NULL DEFAULT now()
@@ -171,7 +173,7 @@ CREATE INDEX idx_optin_audit_time ON optin_audit_log(created_at);
 -- ============================================================
 CREATE TABLE connectors (
   id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id              UUID NOT NULL,
+  user_id              TEXT NOT NULL DEFAULT 'anon-fallback',
   name                 TEXT NOT NULL,
   type                 TEXT NOT NULL
     CHECK (type IN ('meta_cloud_api','360dialog','wati','interakt','crm_webhook')),
@@ -195,12 +197,12 @@ CREATE INDEX idx_connectors_user ON connectors(user_id);
 CREATE TABLE campaign_contacts (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   campaign_id UUID NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
-  user_id     UUID NOT NULL,
+  user_id     TEXT NOT NULL DEFAULT 'anon-fallback',
   phone       TEXT NOT NULL,
   name        TEXT,
   extra_data  JSONB DEFAULT '{}',
-  batch_day   INT NOT NULL,
-  send_date   DATE NOT NULL,
+  batch_day   INT NOT NULL DEFAULT 1,
+  send_date   DATE NOT NULL DEFAULT CURRENT_DATE,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -222,49 +224,11 @@ CREATE TABLE messages (
 CREATE INDEX idx_messages_campaign ON messages(campaign_id);
 
 -- ============================================================
--- 11. ROW LEVEL SECURITY
+-- 11. RLS DISABLED (using anon key directly, no auth required)
 -- ============================================================
-ALTER TABLE contacts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE contact_custom_fields ENABLE ROW LEVEL SECURITY;
-ALTER TABLE campaigns ENABLE ROW LEVEL SECURITY;
-ALTER TABLE message_log ENABLE ROW LEVEL SECURITY;
-ALTER TABLE journeys ENABLE ROW LEVEL SECURITY;
-ALTER TABLE segments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE optin_audit_log ENABLE ROW LEVEL SECURITY;
-ALTER TABLE connectors ENABLE ROW LEVEL SECURITY;
-ALTER TABLE campaign_contacts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-
--- Policies
-CREATE POLICY "Users manage own contacts" ON contacts
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users manage own custom fields" ON contact_custom_fields
-  FOR ALL USING (contact_id IN (SELECT id FROM contacts WHERE user_id = auth.uid()));
-
-CREATE POLICY "Users manage own campaigns" ON campaigns
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users see own message logs" ON message_log
-  FOR ALL USING (campaign_id IN (SELECT id FROM campaigns WHERE user_id = auth.uid()));
-
-CREATE POLICY "Users manage own journeys" ON journeys
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users manage own segments" ON segments
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users see own audit log" ON optin_audit_log
-  FOR ALL USING (contact_id IN (SELECT id FROM contacts WHERE user_id = auth.uid()));
-
-CREATE POLICY "Users manage own connectors" ON connectors
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users manage own campaign contacts" ON campaign_contacts
-  FOR ALL USING (auth.uid() = user_id);
-
-CREATE POLICY "Users manage own messages" ON messages
-  FOR ALL USING (campaign_id IN (SELECT id FROM campaigns WHERE user_id = auth.uid()));
+-- RLS is disabled so the app works with the Supabase anon key
+-- without requiring user authentication setup.
+-- Enable RLS + policies later when you add proper auth.
 
 -- ============================================================
 -- 12. UPDATED_AT TRIGGER
