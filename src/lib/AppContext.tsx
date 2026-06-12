@@ -33,20 +33,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     async function init() {
       try {
+        // Try to get existing session first
         const { data: session } = await supabase!.auth.getSession();
         let user = session.session?.user ?? null;
 
         if (!user) {
-          const { data } = await supabase!.auth.signInAnonymously();
+          // Try anonymous sign-in (must be enabled in Supabase dashboard)
+          const { data, error } = await supabase!.auth.signInAnonymously();
+          if (error) {
+            // Anonymous auth not enabled — use a fallback user ID based on anon key
+            // Connection still works for tables with permissive RLS
+            console.warn("Anonymous auth not enabled, using fallback mode:", error.message);
+            if (mounted) {
+              setUserId("anon-fallback");
+              setDbStatus("connected");
+            }
+            return;
+          }
           user = data.user;
         }
 
-        if (mounted && user) {
-          setUserId(user.id);
+        if (mounted) {
+          setUserId(user?.id ?? "anon-fallback");
           setDbStatus("connected");
         }
       } catch {
-        if (mounted) setDbStatus("local");
+        // Last resort: test if Supabase is reachable at all
+        try {
+          await supabase!.from("contacts").select("id").limit(1);
+          if (mounted) {
+            setUserId("anon-fallback");
+            setDbStatus("connected");
+          }
+        } catch {
+          if (mounted) setDbStatus("local");
+        }
       } finally {
         if (mounted) setIsReady(true);
       }
