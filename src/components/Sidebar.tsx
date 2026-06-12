@@ -9,10 +9,12 @@ import {
   MessageSquare,
   ChevronLeft,
   Menu,
+  HelpCircle,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useApp } from "@/lib/AppContext";
 
 const navItems = [
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
@@ -20,11 +22,13 @@ const navItems = [
   { label: "Journey Builder", href: "/journey", icon: GitBranch },
   { label: "Database", href: "/database", icon: Database },
   { label: "Connectors", href: "/connectors", icon: Plug },
+  { label: "Help Desk", href: "/help", icon: HelpCircle },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { dbStatus } = useApp();
 
   return (
     <>
@@ -97,15 +101,15 @@ export default function Sidebar() {
         <div className="px-3 py-4 border-t border-border">
           {!collapsed ? (
             <div className="rounded-lg bg-purple-50 border border-purple-100 p-3">
-              <p className="text-[11px] font-semibold text-purple-700">Meta Cloud API</p>
+              <p className="text-[11px] font-semibold text-purple-700">Database</p>
               <div className="mt-1.5 flex items-center gap-1.5 text-[10px] text-purple-600/80">
-                <span className="size-1.5 rounded-full bg-emerald-500" />
-                Connected
+                <span className={`size-1.5 rounded-full ${dbStatus === "connected" ? "bg-emerald-500" : dbStatus === "connecting" ? "bg-amber-400" : "bg-gray-400"}`} />
+                {dbStatus === "connected" ? "Supabase Connected" : dbStatus === "connecting" ? "Connecting..." : "Local Mode"}
               </div>
             </div>
           ) : (
             <div className="flex justify-center">
-              <span className="size-2 rounded-full bg-emerald-500" />
+              <span className={`size-2 rounded-full ${dbStatus === "connected" ? "bg-emerald-500" : "bg-gray-400"}`} />
             </div>
           )}
         </div>
