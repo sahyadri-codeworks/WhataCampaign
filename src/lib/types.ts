@@ -1,5 +1,106 @@
 export type OptinCategory = 'none' | 'utility_only' | 'marketing' | 'double_confirmed' | 'opted_out';
 
+// ── Campaign Sort types ──────────────────────────────────────
+
+export type PriorityMode = 'engagement' | 'recency' | 'tag_priority' | 'round_robin';
+export type SequenceCondition = 'always' | 'not_replied' | 'not_clicked' | 'not_converted';
+export type CampaignJobStatus = 'pending' | 'processing' | 'sent' | 'delivered' | 'failed' | 'skipped' | 'cancelled';
+
+export type PriorityWeights = {
+  engagement: number;
+  recency: number;
+  tag: number;
+  optin: number;
+};
+
+export type SequenceStepDef = {
+  step_order: number;
+  template_id?: string;
+  template_name: string;
+  day_offset: number;
+  condition: SequenceCondition;
+};
+
+export type CustomFilterRule = {
+  field: string;
+  operator: 'equals' | 'not_equals' | 'contains' | 'gt' | 'lt' | 'gte' | 'lte';
+  value: string;
+};
+
+export type CampaignSortConfig = {
+  name: string;
+  category: TemplateCategory;
+  connector_id: string;
+  fallback_connector_id?: string;
+  template_name: string;
+  template_body?: string;
+  variable_mappings: Record<string, string>;
+  audience_segment_ids: string[];
+  audience_tag_filter: string[];
+  audience_custom_filter: CustomFilterRule[];
+  exclude_tags: string[];
+  cooldown_hours: number;
+  max_messages_per_contact: number;
+  daily_limit: number;
+  send_window_start: string;
+  send_window_end: string;
+  priority_mode: PriorityMode;
+  priority_weights: PriorityWeights;
+  start_date: string;
+  sequence_steps: SequenceStepDef[];
+};
+
+export type ExclusionBreakdown = {
+  opted_out: number;
+  cooldown_active: number;
+  optin_missing: number;
+  freq_capped: number;
+  excluded_by_tag: number;
+};
+
+export type DailyBatchPlan = {
+  date: string;
+  batch_size: number;
+  send_window: string;
+  hourly_batches: { hour: string; count: number }[];
+};
+
+export type CampaignPlan = {
+  total_contacts_eligible: number;
+  total_contacts_excluded: number;
+  exclusion_breakdown: ExclusionBreakdown;
+  estimated_days_to_complete: number;
+  daily_schedule: DailyBatchPlan[];
+  sequence_steps: SequenceStepDef[];
+  estimated_delivery_rate: string;
+  warnings: string[];
+  contact_ids_ordered: string[];
+  generated_at: string;
+};
+
+export type CampaignProgress = {
+  campaign_id: string;
+  status: string;
+  total_jobs: number;
+  sent: number;
+  delivered: number;
+  failed: number;
+  pending: number;
+  skipped: number;
+  block_rate: number;
+  eta_hours: number | null;
+  quality_rating: string | null;
+  daily_batches: {
+    date: string;
+    total: number;
+    sent: number;
+    delivered: number;
+    failed: number;
+    block_rate: number;
+    quality: string | null;
+  }[];
+};
+
 export type Contact = {
   id: string;
   phone: string;

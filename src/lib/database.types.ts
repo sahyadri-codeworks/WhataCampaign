@@ -15,6 +15,10 @@ export interface Database {
           tier_tag: string;
           last_message_at: string | null;
           block_count: number;
+          engagement_score: number;
+          last_campaign_sent_at: string | null;
+          freq_capped_until: string | null;
+          tags: string[];
           created_at: string;
           updated_at: string;
         };
@@ -29,6 +33,10 @@ export interface Database {
           tier_tag?: string;
           last_message_at?: string | null;
           block_count?: number;
+          engagement_score?: number;
+          last_campaign_sent_at?: string | null;
+          freq_capped_until?: string | null;
+          tags?: string[];
           created_at?: string;
           updated_at?: string;
         };
@@ -70,6 +78,24 @@ export interface Database {
           total_read: number;
           total_responded: number;
           total_failed: number;
+          connector_id: string | null;
+          fallback_connector_id: string | null;
+          template_ids: Json;
+          variable_mappings: Json;
+          audience_segment_ids: string[];
+          audience_tag_filter: string[];
+          audience_custom_filter: Json;
+          exclude_tags: string[];
+          cooldown_hours: number;
+          max_messages_per_contact: number;
+          send_window_start: string;
+          send_window_end: string;
+          priority_mode: string;
+          priority_weights: Json;
+          plan_json: Json | null;
+          plan_generated_at: string | null;
+          launched_at: string | null;
+          completed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -91,10 +117,111 @@ export interface Database {
           total_read?: number;
           total_responded?: number;
           total_failed?: number;
+          connector_id?: string | null;
+          fallback_connector_id?: string | null;
+          template_ids?: Json;
+          variable_mappings?: Json;
+          audience_segment_ids?: string[];
+          audience_tag_filter?: string[];
+          audience_custom_filter?: Json;
+          exclude_tags?: string[];
+          cooldown_hours?: number;
+          max_messages_per_contact?: number;
+          send_window_start?: string;
+          send_window_end?: string;
+          priority_mode?: string;
+          priority_weights?: Json;
+          plan_json?: Json | null;
+          plan_generated_at?: string | null;
+          launched_at?: string | null;
+          completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["campaigns"]["Insert"]>;
+      };
+      campaign_sequence_steps: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          step_order: number;
+          template_id: string | null;
+          template_name: string | null;
+          day_offset: number;
+          condition: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          step_order?: number;
+          template_id?: string | null;
+          template_name?: string | null;
+          day_offset?: number;
+          condition?: string;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["campaign_sequence_steps"]["Insert"]>;
+      };
+      campaign_jobs: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          contact_id: string;
+          contact_phone: string;
+          sequence_step: number;
+          scheduled_at: string;
+          executed_at: string | null;
+          status: string;
+          connector_used: string | null;
+          skip_reason: string | null;
+          error_code: string | null;
+          message_log_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          contact_id: string;
+          contact_phone: string;
+          sequence_step?: number;
+          scheduled_at: string;
+          executed_at?: string | null;
+          status?: string;
+          connector_used?: string | null;
+          skip_reason?: string | null;
+          error_code?: string | null;
+          message_log_id?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["campaign_jobs"]["Insert"]>;
+      };
+      campaign_daily_batches: {
+        Row: {
+          id: string;
+          campaign_id: string;
+          batch_date: string;
+          total_contacts: number;
+          sent: number;
+          delivered: number;
+          failed: number;
+          block_rate: number;
+          quality_at_send: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          campaign_id: string;
+          batch_date: string;
+          total_contacts?: number;
+          sent?: number;
+          delivered?: number;
+          failed?: number;
+          block_rate?: number;
+          quality_at_send?: string | null;
+          created_at?: string;
+        };
+        Update: Partial<Database["public"]["Tables"]["campaign_daily_batches"]["Insert"]>;
       };
       message_log: {
         Row: {
